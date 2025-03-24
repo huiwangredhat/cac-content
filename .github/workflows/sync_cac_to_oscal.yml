@@ -63,3 +63,16 @@ jobs:
             --base d2d1faf6db138f649c235af0f701cdfc110a3ffb \
             --remote_repo https://github.com/ComplianceAsCode/content \
             --verbose --profile --rule --output json 13176 > output.json
+      - name: Test if there are no content changes
+        run: echo "CTF_OUTPUT_SIZE=$(stat --printf="%s" output.json)" >> $GITHUB_OUTPUT
+        id: ctf
+      - name: Print changes to content detected if any
+        if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
+        run: cat output.json
+      - name: Get product attribute
+        if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
+        id: product
+        uses: notiz-dev/github-action-json-property@a5a9c668b16513c737c3e1f8956772c99c73f6e8 # v0.2.0
+        with:
+          path: 'output.json'
+          prop_path: 'product'
