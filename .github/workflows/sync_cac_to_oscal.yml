@@ -76,3 +76,4 @@ jobs:
         with:
           path: 'output.json'
           prop_path: 'product'
+      - run: echo ${{steps.product.outputs.prop}}
