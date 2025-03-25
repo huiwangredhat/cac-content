@@ -54,7 +54,7 @@ jobs:
       - name: Checkout (CTF)
         uses: actions/checkout@v4  # Use the latest version of actions/checkout
         with:
-          repository: ComplianceAsCode/content-test-filtering
+          repository: huiwangredhat/content-test-filtering
           path: ctf
       # Step 5: Detect content changes in the PR
       - name: Detect content changes in the PR
@@ -68,12 +68,12 @@ jobs:
         id: ctf
       - name: Print changes to content detected if any
         if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
-        run: cat output.json
+        run: cat controls_updates.json
       - name: Get product attribute
         if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
-        id: product
+        id: controls
         uses: notiz-dev/github-action-json-property@a5a9c668b16513c737c3e1f8956772c99c73f6e8 # v0.2.0
         with:
-          path: 'output.json'
-          prop_path: 'product'
-      - run: echo ${{steps.product.outputs.prop}}
+          path: 'controls_updates.json'
+          prop_path: 'controls'
+      - run: echo ${{steps.controls.outputs.prop}}
