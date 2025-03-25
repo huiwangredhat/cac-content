@@ -52,7 +52,7 @@ jobs:
 
       # Step 4: Checkout the ComplianceAsCode/content-test-filtering repository
       - name: Checkout (CTF)
-        uses: actions/checkout@v4  # Use the latest version of actions/checkout
+        uses: actions/checkout@cf1c9f30f6b2ef5ed72e1b80d7f76f8e2c2b9dcb  # Use the latest version of actions/checkout
         with:
           repository: huiwangredhat/content-test-filtering
           path: ctf
@@ -64,7 +64,7 @@ jobs:
             --remote_repo https://github.com/ComplianceAsCode/content \
             --verbose --profile --rule --output json 13176 > output.json
       - name: Test if there are no content changes
-        run: echo "CTF_OUTPUT_SIZE=$(stat --printf="%s" output.json)" >> $GITHUB_OUTPUT
+        run: echo "CTF_OUTPUT_SIZE=$(stat --printf="%s" controls_updates.json)" >> $GITHUB_OUTPUT
         id: ctf
       - name: Print changes to content detected if any
         if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
