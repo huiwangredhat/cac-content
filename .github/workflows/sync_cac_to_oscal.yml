@@ -1,13 +1,10 @@
 name: Sync CaC content to OSCAL
 on:
   pull_request:
+    types:
+      - closed
     branches:
       - master
-  #pull_request:
-  #  types:
-  #    - closed
-  #  branches:
-  #    - master
 
 jobs:
   check-pr-message:
