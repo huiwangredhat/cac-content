@@ -18,7 +18,6 @@ jobs:
         if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
           PR_TITLE="${{ github.event.pull_request.title }}"
           PR_BODY="${{ github.event.pull_request.body }}"
-
             echo "PR Title: $PR_TITLE"
             echo "PR Body: $PR_BODY"
           if [[ "$PR_TITLE" == *"Automatic updates from OSCAL content"* ]] || [[ "$PR_BODY" == *"Automatic updates from OSCAL content"* ]]; then
@@ -39,17 +38,14 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.9'  # Specify the Python version
-
       # Step 2: Install Git (if not already installed)
       - name: Install Git
         run: sudo apt-get update && sudo apt-get install -y git
-
       # Step 3: Install Python dependencies
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
           pip3 install gitpython PyYAML deepdiff Jinja2 xmldiff
-
       # Step 4: Checkout the ComplianceAsCode/content-test-filtering repository
       - name: Checkout (CTF)
         uses: actions/checkout@v4  # Use the latest version of actions/checkout
@@ -65,16 +61,21 @@ jobs:
             --remote_repo https://github.com/ComplianceAsCode/content \
             --verbose --profile --rule --output json 13176 > output.json
       - name: Test if there are no content changes
-        run: echo "CTF_OUTPUT_SIZE=$(stat --printf="%s" controls_updates.json)" >> $GITHUB_OUTPUT
+        run: echo "CTF_OUTPUT_SIZE=$(stat --printf="%s" output.json)" >> $GITHUB_OUTPUT
         id: ctf
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
+        if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
+        with:
+          name: output
+          path: output.json
       - name: Print changes to content detected if any
         if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
-        run: cat controls_updates.json
+        run: cat output.json
       - name: Get product attribute
         if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
-        id: controls
+        id: product
         uses: notiz-dev/github-action-json-property@a5a9c668b16513c737c3e1f8956772c99c73f6e8 # v0.2.0
         with:
-          path: 'controls_updates.json'
-          prop_path: 'controls'
-      - run: echo ${{steps.controls.outputs.prop}}
+          path: 'output.json'
+          prop_path: 'product'
+      - run: echo ${{steps.product.outputs.prop}}
