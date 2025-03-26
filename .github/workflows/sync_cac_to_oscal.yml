@@ -71,11 +71,29 @@ jobs:
       - name: Print changes to content detected if any
         if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
         run: cat output.json
-      - name: Get product attribute
+      - name: Print changes in different Files
         if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
-        id: product
+        run:
+          i=1  # Initialize the counter
+          while IFS= read -r line; do
+            # Process each line and output to a file with a dynamic name
+            if echo "$line" | grep -q "rules"; then
+              echo "$line" > "rules${i}.json"
+            elif echo "$line" | grep -q "profiles"; then
+              echo "$line" > "profiles${i}.json"
+            else
+              echo "$line" > "controls.json"
+            fi
+            i=$((i + 1))
+          done < output.json
+      - name: Test if there are no controls changes
+        run: echo "CTF_OUTPUT_SIZE=$(stat --printf="%s" controls.json)" >> $GITHUB_OUTPUT
+        id: ctf
+      - name: Get control attribute
+        if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
+        id: controls
         uses: notiz-dev/github-action-json-property@a5a9c668b16513c737c3e1f8956772c99c73f6e8 # v0.2.0
         with:
-          path: 'output.json'
-          prop_path: 'product'
-      - run: echo ${{steps.product.outputs.prop}}
+          path: 'controls.json'
+          prop_path: 'controls'
+      - run: echo ${{steps.controls.outputs.prop}}
