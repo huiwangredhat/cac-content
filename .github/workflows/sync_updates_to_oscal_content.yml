@@ -139,7 +139,14 @@ jobs:
               # Sync CAC profile update to OSCAL profile and component-definition
               PROFILES=$(echo "$line" | jq -r '.profiles[]')
               PRODUCT=$(echo "$line" | jq -r '.product')
-              for $PRODUCT in $RHEL_PRODUCTS; do
+              found=false
+              for value in "${RHEL_PRODUCTS[@]}"; do
+                if [[ "$PRODUCT" == "$value" ]]; then
+                  found=true
+                  break
+                fi
+              done
+              if $found; then
                 for profile in $PROFILES; do
                   # TODO: get the mapping $policy_id from the profile
                   poetry run trestlebot sync-cac-content profile  --repo-path ../oscal-content --committer-email test@redhat.com --committer-name test --branch sync_cac/cac_$pr_number --cac-content-root ../content --product $PRODUCT --policy-id $policy_id --oscal-catalog $policy_id
@@ -157,7 +164,7 @@ jobs:
                   # type="validation"
                   # poetry run trestlebot sync-cac-content component-definition --repo-path ../oscal-content --committer-email test@redhat.com --committer-name --branch sync_cac/cac_$pr_number --cac-content-root ../content --product $PRODUCT  --component-definition-type $type --cac-profile $profile  --oscal-profile $policy_id_level
                 done
-              done
+              fi
             else
               #TODO: as talked with Marcus, sync rules will updated later
               RULES=$(echo "$line" | jq -r '.rules[]')
