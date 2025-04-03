@@ -1,0 +1,167 @@
+name: Sync CaC content to OSCAL
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - master
+
+jobs:
+  check-pr-message:
+    runs-on: ubuntu-latest
+    outputs:
+      run_job_check_update: ${{ steps.check_pr.outputs.run_job_check_update }}
+    steps:
+    - name: Check if the PR comes from the sync of OSCAL content
+      id: check_pr
+      run: |
+        if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
+            echo "PR Title: $PR_TITLE"
+            echo "PR Body: $PR_BODY"
+          if [[ "$PR_TITLE" == *"Automatic updates from OSCAL content"* ]] || [[ "$PR_BODY" == *"Automatic updates from OSCAL content"* ]]; then
+            echo "The PR comes from OSCAL content. The task of Sync CaC content to OSCAL will exit."
+            echo "Skipping further checks."
+            exit 0
+          else
+            echo "::set-output name=run_job_check_update::true"
+          fi
+         fi
+  check-cac-content-update-and-sync-oscal-content:
+    runs-on: ubuntu-latest
+    needs: check-pr-message
+    if: ${{ needs.check-pr-message.outputs.run_job_check_update == 'true' }}
+    steps:
+      # Step 1: Set up Python 3
+      - name: Set up Python 3
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'  # Specify the Python version
+      # Step 2: Install Git (if not already installed)
+      - name: Install Git
+        run: sudo apt-get update && sudo apt-get install -y git
+      # Step 3: Install Python dependencies
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install gitpython PyYAML deepdiff Jinja2 xmldiff
+      # Step 4: Checkout the ComplianceAsCode/content-test-filtering repository
+      - name: Checkout (CTF)
+        uses: actions/checkout@v4  # Use the latest version of actions/checkout
+        with:
+          repository: huiwangredhat/content-test-filtering # TODO: updated to ComplianceAsCode/content-test-filtering
+          ref: filter_controls_update
+          path: ctf
+  
+      # Step 5: Detect content changes in the PR
+      - name: Detect content changes in the PR
+        run: |
+          # TODO:
+          # 1. replace the 13176 to $pr_number
+          # 2. replace remote_repo value to ${{ github.server_url }}/${{ github.repository }}
+          # 3. replace base value to master
+          python ctf/content_test_filtering.py pr \
+            --base d2d1faf6db138f649c235af0f701cdfc110a3ffb \
+            --remote_repo https://github.com/ComplianceAsCode/content \
+            --verbose --profile --rule --output json 13176 > output.json
+      - name: Test if there are no content changes
+        run: echo "CTF_OUTPUT_SIZE=$(stat --printf="%s" output.json)" >> $GITHUB_OUTPUT
+        id: ctf
+      - name: Print changes to content detected if any
+        if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
+        run: cat output.json
+
+      # Step 6: Setup the trestle-bot CLI run envrionment
+      - name: Checkout CaC repo
+        if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ComplianceAsCode/content
+          path: content
+      - name: Checkout OSCAL content repo
+        if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
+        uses: actions/checkout@v4
+        with:
+          repository: huiwangredhat/trestle-repo # TODO: need to update it to OSCAL content repo
+          path: oscal-content
+          token: ${{ secrets.OSCAL_ACCESS_PAT }} # TODO: The access token should be granted the content write permission
+      - name: Checkout trestle-bot repo
+        if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
+        uses: actions/checkout@v4
+        with:
+          repository: complytime/trestle-bot
+          path: trestle-bot
+      - name: Setup trestlebot
+        run: |
+          cd trestle-bot
+          python3.9 -m pip install --no-cache-dir --upgrade pip setuptools
+          python3.9 -m pip install --no-cache-dir "poetry==1.7.1"
+          poetry install
+
+      # Step 7: Sync CAC content updates to OSCAL content
+      - name: Sync cac content updates to oscal content
+        if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
+        run: |
+          cd trestle-bot
+          pr_number="${{ github.event.pull_request.number }}"
+          RHEL_PRODUCTS=('rhel8', 'rhel9', 'rhel10', 'ocp4', 'rhcos4', 'rhv4')
+          while IFS= read -r line; do
+            if echo "$line" | grep -q "controls"; then
+              # Sync CAC controls update to OSCAL catalogs, profiles and component-definition
+              CONTROLS=$(echo "$line" | jq -r '.controls[]')
+              for control in $CONTROLS; do
+                if [[ "$control" == *"SRG-APP"* ]] || [[ "$control" == *"SRG-OS"* ]]; then
+                  echo "Ignoring SRG-APP and SRG-OS: $policy_id"
+                  continue
+                fi
+                if [[ "$control" == *"section"* ]]; then
+                  echo "Section found, setting policy_id to 'cis_ocp_1_4_0'"
+                  policy_id="cis_ocp_1_4_0"
+                else
+                  policy_id=$(echo "$control" | cut -f1 -d".")
+                fi
+                poetry run trestlebot sync-cac-content catalog  --repo-path ../oscal-content --committer-email test@redhat.com --committer-name test --branch sync_cac/cac_$pr_number --cac-content-root ../content --policy-id $policy_id --oscal-catalog $policy_id
+                for product in $RHEL_PRODUCTS; do 
+                  poetry run trestlebot sync-cac-content profile  --repo-path ../oscal-content --committer-email test@redhat.com --committer-name test --branch sync_cac/cac_$pr_number --cac-content-root ../content --product $product --policy-id $policy_id --oscal-catalog $policy_id
+                  if [[ "$product" == *'rhel'* ]] ; then
+                    type="software"
+                  else
+                    type="service"
+                  fi
+                  # How to map which profile the component-definition will use?
+                  # poetry run trestlebot sync-cac-content component-definition --repo-path ../oscal-content --committer-email test@redhat.com --committer-name --branch sync_cac/cac_$pr_number --cac-content-root ../content --product $PRODUCT  --component-definition-type $type --cac-profile $profile  --oscal-profile $policy_id_level
+                  # type="validation"
+                  # poetry run trestlebot sync-cac-content component-definition --repo-path ../oscal-content --committer-email test@redhat.com --committer-name --branch sync_cac/cac_$pr_number --cac-content-root ../content --product $PRODUCT  --component-definition-type $type --cac-profile $profile  --oscal-profile $policy_id_level
+                done
+              done
+            elif echo "$line" | grep -q "profiles"; then
+              # Sync CAC profile update to OSCAL profile and component-definition
+              PROFILES=$(echo "$line" | jq -r '.profiles[]')
+              PRODUCT=$(echo "$line" | jq -r '.product')
+              for $PRODUCTS in $RHEL_PRODUCTS; do
+                for profile in $PROFILES; do
+                  # TODO: get the mapping $policy_id from the profile
+                  poetry run trestlebot sync-cac-content profile  --repo-path ../oscal-content --committer-email test@redhat.com --committer-name test --branch sync_cac/cac_$pr_number --cac-content-root ../content --product $PRODUCT --policy-id $policy_id --oscal-catalog $policy_id
+                  # Make sure the OSCAL source catalogs and profiles are in the related folders of oscal content
+                  if [[ "$profile" == *"default"* ]] ; then
+                    continue
+                  fi
+                  if [[ "$PRODUCT" == *'rhel'* ]] ; then
+                    type="software"
+                  else
+                    type="service"
+                  fi
+                  # How to make sure the --oscal-profile $policy_id_level?
+                  # poetry run trestlebot sync-cac-content component-definition --repo-path ../oscal-content --committer-email test@redhat.com --committer-name --branch sync_cac/cac_$pr_number --cac-content-root ../content --product $PRODUCT  --component-definition-type $type --cac-profile $profile  --oscal-profile $policy_id_level
+                  # type="validation"
+                  # poetry run trestlebot sync-cac-content component-definition --repo-path ../oscal-content --committer-email test@redhat.com --committer-name --branch sync_cac/cac_$pr_number --cac-content-root ../content --product $PRODUCT  --component-definition-type $type --cac-profile $profile  --oscal-profile $policy_id_level
+                done
+              done
+            else
+              #TODO: as talked with Marcus, sync rules will updated later
+              RULES=$(echo "$line" | jq -r '.rules[]')
+              PRODUCT=$(echo "$line" | jq -r '.product')
+              echo "Skip the rules sync that only need to update the rule title"
+            fi
+          done < ../output.json
