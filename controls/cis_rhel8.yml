@@ -5,7 +5,7 @@ id: cis_rhel8
 version: '3.0.0'
 source: https://www.cisecurity.org/cis-benchmarks/#red_hat_linux
 levels:
-  #- id: l1_server
+  - id: l1_server
   - id: l2_server
     inherits_from:
       - l1_server
@@ -37,7 +37,7 @@ controls:
       We need this in all CIS versions, but the policy doesn't have any section where this would fit better.
     status: automated
     rules:
-      - var_authselect_profile=sssd
+      #- var_authselect_profile=sssd
       - enable_authselect
 
   - id: 1.1.1.1
