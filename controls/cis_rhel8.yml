@@ -5,7 +5,7 @@ id: cis_rhel8
 version: '3.0.0'
 source: https://www.cisecurity.org/cis-benchmarks/#red_hat_linux
 levels:
-  - id: l1_server
+  #- id: l1_server
   - id: l2_server
     inherits_from:
       - l1_server

@@ -85,7 +85,7 @@ jobs:
         if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
         uses: actions/checkout@v4
         with:
-          repository: huiwangredhat/cac-content
+          repository: complytime/cac-content
           ref: jinja_workaround
           path: content
       - name: Checkout OSCAL content repo
@@ -104,12 +104,9 @@ jobs:
       - name: Setup trestlebot
         if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
         run: |
-          cd trestle-bot
-          python3.9 -m venv venv
-          source venv/bin/activate
-          python3.9 -m pip install --no-cache-dir --upgrade pip setuptools
-          python3.9 -m pip install --no-cache-dir "poetry==1.7.1"
-          poetry install
+          cd trestle-bot && python3.9 -m venv venv && source venv/bin/activate
+          python3.9 -m pip install --no-cache-dir --upgrade pip && python3.9 -m pip install --no-cache-dir pipx \
+    && python3 -m pipx install poetry=="1.7.1"
       # Step 7: Get profiles, controls and level mapping
       - name: Get profiles, controls and level mapping
         if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
@@ -203,7 +200,7 @@ jobs:
                           type="service"
                         fi
                         echo "poetry run trestlebot sync-cac-content component-definition --repo-path ../oscal-content --committer-email test@redhat.com --committer-name test --branch sync_cac/$pr_number --cac-content-root ../content --product $product  --component-definition-type $type --cac-profile $profile  --oscal-profile $oscal_profile"
-                        poetry run trestlebot sync-cac-content component-definition --repo-path ../oscal-content --committer-email test@redhat.com --committer-name test --branch sync_cac/$pr_number --cac-content-root ../content --product $product  --component-definition-type $type --cac-profile $profile  --oscal-profile $oscal_profile
+                        poetry run trestlebot sync-cac-content component-definition --repo-path ../oscal-content --committer-email test@redhat.com --committer-name test --branch sync_cac/$pr_number --cac-content-root ../content --product $product  --component-definition-type $type --cac-profile $profile  --oscal-profile $oscal_profile --debug
                         type="validation"
                         echo "poetry run trestlebot sync-cac-content component-definition --repo-path ../oscal-content --committer-email test@redhat.com --committer-name test --branch sync_cac/$pr_number --cac-content-root ../content --product $product  --component-definition-type $type --cac-profile $profile  --oscal-profile $oscal_profile"
                         poetry run trestlebot sync-cac-content component-definition --repo-path ../oscal-content --committer-email test@redhat.com --committer-name test --branch sync_cac/$pr_number --cac-content-root ../content --product $product  --component-definition-type $type --cac-profile $profile  --oscal-profile $oscal_profile
