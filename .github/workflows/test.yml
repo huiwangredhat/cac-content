@@ -1,0 +1,89 @@
+name: Sync CaC content to OSCAL
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+  # The final version should execute the test whenever a PR is merged to master.
+  #pull_request:
+  #  types:
+  #    - closed
+  #  branches:
+  #    - master
+
+jobs:
+  check-pr-message:
+    runs-on: ubuntu-latest
+    outputs:
+      run_job_check_update: ${{ steps.check_pr.outputs.run_job_check_update }}
+    steps:
+    - name: Check if the PR comes from the sync of OSCAL content
+      id: check_pr
+      run: |
+        #if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
+            echo "PR Title: $PR_TITLE"
+            echo "PR Body: $PR_BODY"
+          if [[ "$PR_TITLE" == *"Automatic updates from OSCAL content"* ]] || [[ "$PR_BODY" == *"Automatic updates from OSCAL content"* ]]; then
+            echo "The PR comes from OSCAL content. The task of Sync CaC content to OSCAL will exit."
+            echo "Skipping further checks."
+            exit 0
+          else
+            echo "::set-output name=run_job_check_update::true"
+          fi
+        #fi
+  check-cac-content-update-and-sync-oscal-content:
+    runs-on: ubuntu-latest
+    needs: check-pr-message
+    if: ${{ needs.check-pr-message.outputs.run_job_check_update == 'true' }}
+    steps:
+      # Step 1: Set up Python 3
+      - name: Set up Python 3
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'  # Specify the Python version
+      # Step 2: Install Git (if not already installed)
+      - name: Install Git
+        run: sudo apt-get update && sudo apt-get install -y git
+      # Step 3: Install Python dependencies
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip setuptools
+          pip3 install gitpython PyYAML deepdiff Jinja2 xmldiff
+      # Step 4: Checkout the ComplianceAsCode/content-test-filtering repository
+      - name: Checkout (CTF)
+        uses: actions/checkout@v4  # Use the latest version of actions/checkout
+        with:
+          repository: huiwangredhat/content-test-filtering # TODO: updated to ComplianceAsCode/content-test-filtering
+          ref: filter_controls_update
+          path: ctf
+      - name: Checkout cac-content PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          path: cac-content
+
+      # Step 5: Detect content changes in the PR
+      - name: Detect content changes in the PR
+        run: |
+          # TODO:
+          # 1. replace the 13176 to $pr_number
+          # 2. replace remote_repo value to ${{ github.server_url }}/${{ github.repository }}
+          # 3. replace base value to master
+          #python ctf/content_test_filtering.py pr \
+          #  --base d2d1faf6db138f649c235af0f701cdfc110a3ffb \
+          #  --remote_repo https://github.com/ComplianceAsCode/content \
+          #  --verbose --profile --rule --output json 13176 > output.json
+          python ctf/content_test_filtering.py pr \
+            --base ${{ github.event.pull_request.base.ref}} \
+            --remote_repo https://github.com/huiwangredhat/cac-content \
+            --verbose --profile --rule --output json ${{ github.event.pull_request.number }} > output.json
+            cat output.json
+      - name: Test if there are no content changes
+        run: echo "CTF_OUTPUT_SIZE=$(stat --printf="%s" output.json)" >> $GITHUB_OUTPUT
+        id: ctf
+      - name: Print changes to content detected if any
+        if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
+        run: cat output.json
+
