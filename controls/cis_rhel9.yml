@@ -98,7 +98,7 @@ controls:
     title: Ensure udf kernel module is not available (Automated)
     levels:
       - l2_server
-      - l2_workstation
+      #- l2_workstation
     status: automated
     rules:
       - kernel_module_udf_disabled
