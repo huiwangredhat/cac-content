@@ -126,7 +126,7 @@ controls:
       # Section 1
       - coreos_enable_selinux_kernel_argument
       - selinux_policytype
-      - selinux_state
+      #- selinux_state
       # Section 2
       - scc_limit_privileged_containers
       - scc_limit_root_containers
