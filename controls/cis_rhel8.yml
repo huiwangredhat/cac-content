@@ -197,7 +197,7 @@ controls:
     title: Ensure nodev option set on /home partition (Automated)
     levels:
       - l1_server
-      #- l1_workstation
+      - l1_workstation
     status: automated
     rules:
       - mount_option_home_nodev
