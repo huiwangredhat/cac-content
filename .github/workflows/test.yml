@@ -75,12 +75,8 @@ jobs:
           #  --base d2d1faf6db138f649c235af0f701cdfc110a3ffb \
           #  --remote_repo https://github.com/ComplianceAsCode/content \
           #  --verbose --profile --rule --output json 13176 > output.json
-          cd cac-content
-          LATEST=$(git rev-parse HEAD)
-          PARENT=$(git log -1 --pretty=%P $LATEST | awk '{print $1}')
-          echo $PARENT
-          cd ../ && python ctf/content_test_filtering.py pr \
-            --base $PARENT \
+          python ctf/content_test_filtering.py pr \
+            --base ${{ github.event.pull_request.base.ref}} \
             --remote_repo https://github.com/huiwangredhat/cac-content \
             --verbose --profile --rule --output json ${{ github.event.pull_request.number }} > output.json
             cat output.json
