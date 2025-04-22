@@ -76,7 +76,7 @@ jobs:
           #  --remote_repo https://github.com/ComplianceAsCode/content \
           #  --verbose --profile --rule --output json 13176 > output.json
           python ctf/content_test_filtering.py pr \
-            --base ${{ github.event.push_before }} \
+            --base ${{ github.event.push.before }} \
             --remote_repo https://github.com/huiwangredhat/cac-content \
             --verbose --profile --rule --output json ${{ github.event.pull_request.number }} > output.json
             cat output.json
