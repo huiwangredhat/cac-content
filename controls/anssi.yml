@@ -108,7 +108,7 @@ controls:
     status: automated
     rules:
     - grub2_password
-    #- grub2_uefi_password
+    - grub2_uefi_password
 
   - id: R6
     title: Protecting kernel command line parameters
