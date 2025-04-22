@@ -64,20 +64,6 @@ jobs:
           fetch-depth: 0
           path: cac-content
 
-      - name: Get commit info
-        id: commits
-        run: |
-          cd cac-content
-          LATEST=$(git rev-parse HEAD)
-          PARENT=$(git log -1 --pretty=%P $LATEST | awk '{print $1}')
-          echo "latest_commit=$LATEST" >> $GITHUB_OUTPUT
-          echo "parent_commit=$PARENT" >> $GITHUB_OUTPUT
-
-      - name: Debug output
-        run: |
-          echo "PR Head: ${{ github.event.pull_request.head.sha }}"
-          echo "Latest (local): ${{ steps.commits.outputs.latest_commit }}"
-          echo "Parent: ${{ steps.commits.outputs.parent_commit }}"
       # Step 5: Detect content changes in the PR
       - name: Detect content changes in the PR
         run: |
@@ -89,10 +75,15 @@ jobs:
           #  --base d2d1faf6db138f649c235af0f701cdfc110a3ffb \
           #  --remote_repo https://github.com/ComplianceAsCode/content \
           #  --verbose --profile --rule --output json 13176 > output.json
-           python ctf/content_test_filtering.py pr \
-            --base ${{ steps.commits.outputs.parent_commit }} \
+          cd cac-content
+          LATEST=$(git rev-parse HEAD)
+          PARENT=$(git log -1 --pretty=%P $LATEST | awk '{print $1}')
+          echo $PARENT
+          cd ../ && python ctf/content_test_filtering.py pr \
+            --base $PARENT \
             --remote_repo https://github.com/huiwangredhat/cac-content \
             --verbose --profile --rule --output json ${{ github.event.pull_request.number }} > output.json
+            cat output.json
       - name: Test if there are no content changes
         run: echo "CTF_OUTPUT_SIZE=$(stat --printf="%s" output.json)" >> $GITHUB_OUTPUT
         id: ctf
