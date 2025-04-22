@@ -1,11 +1,14 @@
 name: Sync CaC content to OSCAL
 on:
-  # The final version should execute the test whenever a PR is merged to master.
   pull_request:
-    types:
-      - closed
-    branches:
-      - master
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+  # The final version should execute the test whenever a PR is merged to master.
+  #pull_request:
+  #  types:
+  #    - closed
+  #  branches:
+  #    - master
 
 jobs:
   check-pr-message:
@@ -73,7 +76,7 @@ jobs:
           #  --remote_repo https://github.com/ComplianceAsCode/content \
           #  --verbose --profile --rule --output json 13176 > output.json
           python ctf/content_test_filtering.py pr \
-            --base ${{ github.event.pull_request.base.ref}} \
+            --base ${{ github.event.push.before }} \
             --remote_repo https://github.com/huiwangredhat/cac-content \
             --verbose --profile --rule --output json ${{ github.event.pull_request.number }} > output.json
             cat output.json
