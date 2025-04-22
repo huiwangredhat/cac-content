@@ -21,7 +21,7 @@ controls:
     levels:
       - basic
       - intermediate
-      #- advanced
+      - advanced
     notes: |-
       This is a helper rule to reload Dconf database correctly.
     status: automated
