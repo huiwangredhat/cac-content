@@ -1,7 +1,7 @@
 documentation_complete: true
 
 
-title: 'Disable GNOME3 Automounting'
+title: 'Test for update rule Disable GNOME3 Automounting'
 
 description: |-
     The system's default desktop environment, GNOME3, will mount
