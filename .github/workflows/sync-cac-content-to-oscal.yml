@@ -73,6 +73,7 @@ jobs:
         if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
         uses: actions/checkout@v4
         with:
+          ref: test_sync_rule_update
           repository: ${{ github.repository }}
           path: cac-content
       # Get the access token for content write permission to OSCAL content
