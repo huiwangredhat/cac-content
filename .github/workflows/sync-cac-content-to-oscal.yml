@@ -67,7 +67,6 @@ jobs:
       - name: Print changes to content detected if any
         if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
         run: cat output.json
-
       # Step 5: Setup the trestle-bot CLI run envrionment
       - name: Checkout CaC repo
         if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
@@ -389,6 +388,55 @@ jobs:
               done
             fi
           done < ../output.json
+      # Step ： Detect rule ymal file changes in the PR
+      - name: Detect rule yml file update
+        id: changed-files
+        run: |
+          changes=("rule.ym" ".var")
+          response=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files)
+          echo "$response" | jq -r '.[].filename' > filenames.txt
+          echo "RULE_CHANGE_FOUND=false" >> $GITHUB_ENV
+          for change in "${changes[@]}"; do
+            if grep -q "$change" filenames.txt ; then
+              echo "RULE_CHANGE_FOUND=true" >> $GITHUB_ENV
+              break
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ env.INSTALLATION_TOKEN }}
+      - name: Get the related controls of profiles according to the updated rules
+        if: ${{ env.RULE_CHANGE_FOUND == 'true' }}
+        run: |
+          RHEL_PRODUCTS=(rhel8 rhel9 rhel10)
+          while IFS= read -r line; do
+            if ([[ "$line" == *rule.ym* ]] || [[ "$line" == *.var* ]]) && [[ "$line" == *linux_os* ]]; then
+              if [[ "$line" == *.var* ]]; then
+                value=$(echo "$line" | rev | cut -f1 -d"/" | rev | cut -f2 -d"_" | cut -f1 -d"."
+              else
+                value=$(echo "$line" | rev | cut -f2 -d"/" | rev)
+              fi
+              cd "$GITHUB_WORKSPACE/cac-content/controls"
+              grep -nr $value . >> "$GITHUB_WORKSPACE/rule_impacted_controls"
+              for product in "$RHEL_PRODUCTS[@]"; do
+                cd "$GITHUB_WORKSPACE/cac-content/products/$product"
+                grep -nr $value . >> "$GITHUB_WORKSPACE/rule_impacted_$product_profiles"
+              done
+            fi
+          done < ../filenames.txt
+          
+          impacted_controls=()
+          i=0
+          while IFS= read -r contol_line; do
+            control=$(echo $contol_line | cut -f1 -d":" | rev | cut -f1 -d"/" | rev | cut -f1 -d".")
+            if echo "$impacted_controls[@]}" | grep -qw "$control"; then
+              echo "$control in the array $impacted_controls"
+            else
+              impacted_controls[i]=$(echo $contol_line | cut -f1 -d":" | rev | cut -f1 -d"/" | rev | cut -f1 -d".")
+              i=i+1
+            fi
+          done < $GITHUB_WORKSPACE/rule_impacted_controls
+
+          
       # Step 10: Create PR to OSCAL content
       - name: Create a Pull Request to OSCAL content
         if: ${{ steps.ctf.outputs.CTF_OUTPUT_SIZE != '0' }}
@@ -415,4 +463,3 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ env.INSTALLATION_TOKEN }}
-
