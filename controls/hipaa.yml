@@ -56,6 +56,7 @@ controls:
             - audit_rules_dac_modification_chown
             - audit_rules_dac_modification_fchmod
             - audit_rules_dac_modification_fchmodat
+            - audit_rules_dac_modification_fchmodat2
             - audit_rules_dac_modification_fchown
             - audit_rules_dac_modification_fchownat
             - audit_rules_dac_modification_fremovexattr
@@ -219,6 +220,7 @@ controls:
             - audit_rules_dac_modification_chown
             - audit_rules_dac_modification_fchmod
             - audit_rules_dac_modification_fchmodat
+            - audit_rules_dac_modification_fchmodat2
             - audit_rules_dac_modification_fchown
             - audit_rules_dac_modification_fchownat
             - audit_rules_dac_modification_fremovexattr
@@ -354,8 +356,10 @@ controls:
             - service_rexec_disabled
             - service_rlogin_disabled
             - service_rsh_disabled
+            {{%- if "rhel" not in product %}}
             - package_talk-server_removed
             - package_talk_removed
+           {{%- endif %}}
             - package_telnet-server_removed
             - package_telnet_removed
             - service_telnet_disabled
@@ -413,6 +417,7 @@ controls:
             - audit_rules_dac_modification_chown
             - audit_rules_dac_modification_fchmod
             - audit_rules_dac_modification_fchmodat
+            - audit_rules_dac_modification_fchmodat2
             - audit_rules_dac_modification_fchown
             - audit_rules_dac_modification_fchownat
             - audit_rules_dac_modification_fremovexattr
@@ -1143,6 +1148,7 @@ controls:
             - audit_rules_dac_modification_chown
             - audit_rules_dac_modification_fchmod
             - audit_rules_dac_modification_fchmodat
+            - audit_rules_dac_modification_fchmodat2
             - audit_rules_dac_modification_fchown
             - audit_rules_dac_modification_fchownat
             - audit_rules_dac_modification_fremovexattr
@@ -1281,6 +1287,7 @@ controls:
             - audit_rules_dac_modification_chown
             - audit_rules_dac_modification_fchmod
             - audit_rules_dac_modification_fchmodat
+            - audit_rules_dac_modification_fchmodat2
             - audit_rules_dac_modification_fchown
             - audit_rules_dac_modification_fchownat
             - audit_rules_dac_modification_fremovexattr
@@ -1449,6 +1456,7 @@ controls:
             - audit_rules_dac_modification_chown
             - audit_rules_dac_modification_fchmod
             - audit_rules_dac_modification_fchmodat
+            - audit_rules_dac_modification_fchmodat2
             - audit_rules_dac_modification_fchown
             - audit_rules_dac_modification_fchownat
             - audit_rules_dac_modification_fremovexattr
@@ -1546,6 +1554,7 @@ controls:
             - audit_rules_dac_modification_chown
             - audit_rules_dac_modification_fchmod
             - audit_rules_dac_modification_fchmodat
+            - audit_rules_dac_modification_fchmodat2
             - audit_rules_dac_modification_fchown
             - audit_rules_dac_modification_fchownat
             - audit_rules_dac_modification_fremovexattr

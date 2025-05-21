@@ -82,7 +82,6 @@ selections:
 - disable_ctrlaltdel_reboot
 - disable_host_auth
 - dnf-automatic_apply_updates
-- enable_authselect
 - enable_fips_mode
 - ensure_gpgcheck_globally_activated
 - ensure_gpgcheck_local_packages
@@ -115,7 +114,6 @@ selections:
 - package_openscap-scanner_installed
 - package_openssh-clients_installed
 - package_openssh-server_installed
-- package_scap-security-guide_installed
 - package_subscription-manager_installed
 - package_sudo_installed
 - package_usbguard_installed

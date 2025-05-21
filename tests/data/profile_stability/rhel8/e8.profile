@@ -76,8 +76,6 @@ selections:
 - package_rear_installed
 - package_rsyslog_installed
 - package_squid_removed
-- package_talk-server_removed
-- package_talk_removed
 - package_telnet-server_removed
 - package_telnet_removed
 - package_xinetd_removed
@@ -96,7 +94,6 @@ selections:
 - service_squid_disabled
 - service_telnet_disabled
 - service_xinetd_disabled
-- service_zebra_disabled
 - sshd_disable_empty_passwords
 - sshd_disable_gssapi_auth
 - sshd_disable_rhosts

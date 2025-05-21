@@ -1298,8 +1298,10 @@ controls:
     - package_rsh_removed
     - package_rsh-server_removed
     - package_sendmail_removed
+    {{%- if "rhel" not in product %}}
     - package_talk_removed
     - package_talk-server_removed
+    {{%- endif %}}
     - package_telnet_removed
     - package_telnet-server_removed
     - package_tftp_removed
@@ -1509,6 +1511,7 @@ controls:
     - audit_rules_dac_modification_chown
     - audit_rules_dac_modification_fchmod
     - audit_rules_dac_modification_fchmodat
+    - audit_rules_dac_modification_fchmodat2
     - audit_rules_dac_modification_fchown
     - audit_rules_dac_modification_fchownat
     - audit_rules_dac_modification_fremovexattr
