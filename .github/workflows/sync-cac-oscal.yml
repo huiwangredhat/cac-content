@@ -103,7 +103,7 @@ jobs:
         if: ${{ env.CHANGE_FOUND == 'true' }}
         uses: actions/checkout@v4
         with:
-          repository: complytime/oscal-content
+          repository: ComplianceAsCode/oscal-content
           path: oscal-content
           token: ${{ env.INSTALLATION_TOKEN }}
           fetch-depth: 0
